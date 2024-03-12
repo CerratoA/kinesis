@@ -1,5 +1,7 @@
 const socket = io();
 
+// Variables
+const directionSections = 64; // Number of sections in the compass
 
 const sendLocation = (latlng) => {
     console.log(`emit location ${latlng}`);
@@ -282,7 +284,7 @@ const arrowElement = document.getElementById('arrow');
 // Function to update the arrow direction
 function updateArrowDirection(direction) {
     // Rotate the arrow element based on the direction
-    const degrees = ((360 / 32) * walkDirection) % 360; // Calculate direction in degrees
+    const degrees = ((360 / directionSections) * walkDirection) % 360; // Calculate direction in degrees
     arrowElement.style.transform = `rotate(${degrees}deg)`;
 }
 
@@ -291,12 +293,12 @@ function calculateNewDirection(direction, increment) {
     const newDirection = direction + increment;
     let val;
     if (newDirection >= 0) {
-        val = newDirection % 32; // Use modular arithmetic with 32 sections
+        val = newDirection % directionSections; // Use modular arithmetic with directionSections sections
     } else {
-        val = (32 + (newDirection % 32)) % 32; // Use modular arithmetic with 32 sections
+        val = (directionSections + (newDirection % directionSections)) % directionSections; // Use modular arithmetic with directionSections sections
     }
     console.log(`val: ${val}`);
-    updateArrowDirection(val * (360 / 32)); // Update the arrow direction by converting to degrees
+    updateArrowDirection(val * (360 / directionSections)); // Update the arrow direction by converting to degrees
     return val;
 }
 
@@ -338,7 +340,7 @@ function navigate() {
         if (pause) {
             move(markerShadowPos, 0); // stay
         } else {
-            const degrees = ((360 / 32) * walkDirection) % 360; // Calculate direction in degrees
+            const degrees = ((360 / directionSections) * walkDirection) % 360; // Calculate direction in degrees
             const distance = speed; // Set the distance in meters using the speed variable
             console.log(`walk: ${degrees} ${distance}`);
             const latlng = calculateNewLatLng(markerShadowPos, degrees, distance); // Calculate new latlng based on direction and distance
