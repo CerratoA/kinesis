@@ -6,11 +6,9 @@ const sendLocation = (latlng) => {
     socket.emit('location', latlng);
 }
 
-
 const saveConfig = (key, value) => {
     localStorage.setItem(`kinesis-${key}`, value);
 }
-
 
 const loadConfig = (key, fallback) => {
     const value = localStorage.getItem(`kinesis-${key}`);
@@ -20,9 +18,7 @@ const loadConfig = (key, fallback) => {
     return value ? value : fallback;
 }
 
-
 const center = L.latLng(loadConfig('latitude', 53.338228), loadConfig('longitude', -6.259323));
-
 
 const map = L.map('map', {
     center: center,
@@ -30,21 +26,10 @@ const map = L.map('map', {
     doubleClickZoom: false,
 });
 
-
 const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
-
-
-// L.Routing.control({
-//     waypoints: [
-//         L.latLng(53.338228, -6.259323),
-//         L.latLng(53.344275, -6.272076)
-//     ],
-//     routeWhileDragging: true
-// }).addTo(map);
-
 
 let marker = null;
 let markerLastPos = null;
@@ -59,11 +44,9 @@ let pause = false;
 const tickInterval = 1000; // update location per 1000ms
 const randomFactor = 0.2; // +-20% of origin value
 
-
 const tick = setInterval(function() {
     navigate();
 }, tickInterval);
-
 
 const updateRadio = (name, value) => {
     document.getElementsByName(name).forEach((element) => {
@@ -71,13 +54,11 @@ const updateRadio = (name, value) => {
     });
 }
 
-
 const setSpeed = (v) => {
     updateRadio('speedChoice', v);
     speed = v;
 }
 setSpeed(speed);
-
 
 const setLoop = (v) => {
     updateRadio('loopChoice', v);
@@ -85,13 +66,27 @@ const setLoop = (v) => {
 }
 setLoop(loop);
 
-
 const setPause = (v) => {
     document.getElementById('pauseSwitch').checked = v;
     pause = v;
 }
 setPause(pause);
 
+document.addEventListener('keydown', (event) => {
+    if (event.code === 'Space') {
+        pause = !pause;
+        setPause(pause);
+    }
+});
+
+// Add event listener to the speed input element
+const speedInput = document.getElementById('speed');
+speedInput.addEventListener('input', (event) => {
+    const newSpeed = parseInt(event.target.value);
+    if (!isNaN(newSpeed)) {
+        setSpeed(newSpeed);
+    }
+});
 
 document.getElementById('undoButton').addEventListener('click', deleteStep);
 document.getElementById('stopButton').addEventListener('click', clearSteps);
@@ -275,10 +270,82 @@ function clearSteps() {
     }
 }
 
+let walkDirection = 0; // 0: current direction, -1: left, 1: right
+let walkActive = false;
+
+// Add the following code after the calculateNewDirection function
+
+// Get the SVG element from the HTML file
+const arrowElement = document.getElementById('arrow');
+
+
+// Function to update the arrow direction
+function updateArrowDirection(direction) {
+    // Rotate the arrow element based on the direction
+    const degrees = ((360 / 32) * walkDirection) % 360; // Calculate direction in degrees
+    arrowElement.style.transform = `rotate(${degrees}deg)`;
+}
+
+// Call the updateArrowDirection function inside the calculateNewDirection function
+function calculateNewDirection(direction, increment) {
+    const newDirection = direction + increment;
+    let val;
+    if (newDirection >= 0) {
+        val = newDirection % 32; // Use modular arithmetic with 32 sections
+    } else {
+        val = (32 + (newDirection % 32)) % 32; // Use modular arithmetic with 32 sections
+    }
+    console.log(`val: ${val}`);
+    updateArrowDirection(val * (360 / 32)); // Update the arrow direction by converting to degrees
+    return val;
+}
+
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'j' || event.key === 'ArrowLeft') {
+        event.preventDefault(); // Prevent default behavior of arrow keys
+        walkDirection = calculateNewDirection(walkDirection, -1);
+    } else if (event.key === 'l' || event.key === 'ArrowRight') {
+        event.preventDefault(); // Prevent default behavior of arrow keys
+        walkDirection = calculateNewDirection(walkDirection, 1);
+    } else if (event.key === 'p') {
+        walkActive = !walkActive;
+    } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+        event.preventDefault(); // Prevent default behavior of arrow keys
+    }
+});
+
+function calculateNewLatLng(latlng, deegre, distance) {
+    const direction = deegre * Math.PI / 180; // Convert direction to radians
+    const R = 6371000; // Earth's radius in meters
+    const lat1 = latlng.lat * Math.PI / 180; // Convert latitude to radians
+    const lng1 = latlng.lng * Math.PI / 180; // Convert longitude to radians
+    const angularDistance = distance / R; // Convert distance to angular distance
+
+    const lat2 = Math.asin(Math.sin(lat1) * Math.cos(angularDistance) +
+        Math.cos(lat1) * Math.sin(angularDistance) * Math.cos(direction));
+    const lng2 = lng1 + Math.atan2(Math.sin(direction) * Math.sin(angularDistance) * Math.cos(lat1),
+        Math.cos(angularDistance) - Math.sin(lat1) * Math.sin(lat2));
+
+    return {
+        lat: lat2 * 180 / Math.PI, // Convert latitude back to degrees
+        lng: lng2 * 180 / Math.PI, // Convert longitude back to degrees
+    };
+}
 
 function navigate() {
     const pathLatlngs = path.getLatLngs();
-    if (stepIndex < pathLatlngs.length) {
+    if (loop === 'directional') {
+        if (pause) {
+            move(markerShadowPos, 0); // stay
+        } else {
+            const degrees = ((360 / 32) * walkDirection) % 360; // Calculate direction in degrees
+            const distance = speed; // Set the distance in meters using the speed variable
+            console.log(`walk: ${degrees} ${distance}`);
+            const latlng = calculateNewLatLng(markerShadowPos, degrees, distance); // Calculate new latlng based on direction and distance
+            path.setLatLngs([markerShadowPos]); // Update the path with the new latlng
+            move(latlng, distance); // Move towards the new latlng with the specified distance
+        }
+    } else if (stepIndex < pathLatlngs.length) {
         if (pause) {
             move(markerShadowPos, 0); // stay
         } else {
@@ -298,17 +365,55 @@ function navigate() {
                             stepIndex = 1;
                             break;
                         case 'off':
-                        default:
-                            console.log(`loop: off`);
-                            move(stepLatlng, 0); // stay
-                            break;
+                            default:
+                                console.log(`loop: off`);
+                                move(stepLatlng, 0); // stay
+                                break;
                     }
                 } else {
-                    stepIndex += 1; // proceed with next step
+                    stepIndex++;
                 }
             } else {
-                move(stepLatlng, random(speed) * tickInterval / 1000);
+                move(stepLatlng, stepLatlng.distanceTo(markerShadowPos));
             }
         }
     }
 }
+
+
+// function navigate() {
+//     const pathLatlngs = path.getLatLngs();
+//     if (stepIndex < pathLatlngs.length) {
+//         if (pause) {
+//             move(markerShadowPos, 0); // stay
+//         } else {
+//             const stepLatlng = pathLatlngs[stepIndex];
+//             // check if we're already at the goal
+//             if (stepLatlng.equals(markerShadowPos)) {
+//                 // check if it's last step
+//                 if (stepIndex >= pathLatlngs.length - 1) {
+//                     switch (loop) {
+//                         case 'loop':
+//                             console.log(`loop: move to start`);
+//                             stepIndex = 0;
+//                             break;
+//                         case 'uturn':
+//                             console.log(`loop: make uturn`);
+//                             path.setLatLngs([...pathLatlngs.reverse()]);
+//                             stepIndex = 1;
+//                             break;
+//                         case 'off':
+//                         default:
+//                             console.log(`loop: off`);
+//                             move(stepLatlng, 0); // stay
+//                             break;
+//                     }
+//                 } else {
+//                     stepIndex += 1; // proceed with next step
+//                 }
+//             } else {
+//                 move(stepLatlng, random(speed) * tickInterval / 1000);
+//             }
+//         }
+//     }
+// }

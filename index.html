@@ -24,6 +24,10 @@
 <div class="card" id="control-panel">
     <div class="card-body">
 
+        <svg id="arrow" width="30" height="30" viewBox="0 0 50 50">
+            <path d="M25,5 L35,20 H30 V45 H20 V20 H15 L25,5 Z" fill="black"></path>
+        </svg>
+        
         <div class="btn-group btn-group-sm" role="group" aria-label="Basic checkbox toggle button group">
             <input type="checkbox" class="btn-check" id="pauseSwitch" autocomplete="off">
             <label class="btn btn-outline-primary" for="pauseSwitch">Pause</label>
@@ -33,25 +37,40 @@
 
         <div class="btn-group btn-group-sm" role="group">
             <input type="radio" class="btn-check" name="speedChoice" id="speedChoice1" autocomplete="off" value="1" checked>
-            <label class="btn btn-outline-primary" for="speedChoice1">Walk</label>
+            <label class="btn btn-outline-primary" for="speedChoice1" onkeydown="handleButtonKeydown(event)">Walk 1</label>
 
             <input type="radio" class="btn-check" name="speedChoice" id="speedChoice2" autocomplete="off" value="5">
-            <label class="btn btn-outline-primary" for="speedChoice2">Ride</label>
+            <label class="btn btn-outline-primary" for="speedChoice2" onkeydown="handleButtonKeydown(event)">Ride 5</label>
 
             <input type="radio" class="btn-check" name="speedChoice" id="speedChoice3" autocomplete="off" value="20">
-            <label class="btn btn-outline-primary" for="speedChoice3">Drive</label>
+            <label class="btn btn-outline-primary" for="speedChoice3" onkeydown="handleButtonKeydown(event)">Drive 20</label>
+            <div class="input-group mt-2">
+                <span class="input-group-text">Speed</span>
+                <input type="number" class="form-control" id="speed" placeholder="Speed">
+            </div>
         </div>
 
         <div class="btn-group btn-group-sm" role="group">
             <input type="radio" class="btn-check" name="loopChoice" id="loopChoice1" autocomplete="off" value="off" checked>
-            <label class="btn btn-outline-primary" for="loopChoice1">Off</label>
+            <label class="btn btn-outline-primary" for="loopChoice1" onkeydown="handleButtonKeydown(event)">Off</label>
 
             <input type="radio" class="btn-check" name="loopChoice" id="loopChoice2" autocomplete="off" value="loop">
-            <label class="btn btn-outline-primary" for="loopChoice2">Loop</label>
+            <label class="btn btn-outline-primary" for="loopChoice2" onkeydown="handleButtonKeydown(event)">Loop</label>
 
             <input type="radio" class="btn-check" name="loopChoice" id="loopChoice3" autocomplete="off" value="uturn">
-            <label class="btn btn-outline-primary" for="loopChoice3">U-Turn</label>
+            <label class="btn btn-outline-primary" for="loopChoice3" onkeydown="handleButtonKeydown(event)">U-Turn</label>
+
+            <input type="radio" class="btn-check" name="loopChoice" id="loopChoice4" autocomplete="off" value="directional">
+            <label class="btn btn-outline-primary" for="loopChoice4" onkeydown="handleButtonKeydown(event)">Directional</label>
         </div>
+
+        <script>
+            function handleButtonKeydown(event) {
+                if (event.key === " " || event.key === "Enter") {
+                    event.preventDefault();
+                }
+            }
+        </script>
 
         <div class="input-group mt-2">
             <a class="input-group-text coordinates-icon" href="#" onclick="setDirectTeleport()">
@@ -59,9 +78,9 @@
             </a>
             <input type="text" class="form-control" id="coordinates" placeholder="GPS coordinates">
         </div>
-    </div>
-</div>
+        </div>
+        </div>
 
-<script src="index.js"></script>
-</body>
-</html>
+        <script src="index.js"></script>
+        </body>
+        </html>
